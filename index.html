@@ -60,6 +60,14 @@
                 <!-- Map Controls Overlay -->
                 <div class="map-controls">
                     <div class="control-group">
+                        <label>Kartlag:</label>
+                        <select id="mapLayer" class="select-control">
+                            <option value="street">Gatekart</option>
+                            <option value="satellite">Satellitt</option>
+                            <option value="hybrid">Hybrid</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
                         <label>Farge etter:</label>
                         <select id="colorMode" class="select-control">
                             <option value="speed">Hastighet</option>
@@ -106,7 +114,17 @@
 
                 <!-- Stats Panel -->
                 <div id="statsPanel" class="stats-panel" style="display: none;">
-                    <h2>Statistikk</h2>
+                    <div class="stats-header">
+                        <h2>Statistikk</h2>
+                        <button id="exportPdfBtn" class="btn btn-primary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Eksporter PDF
+                        </button>
+                    </div>
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-icon">
@@ -315,6 +333,8 @@
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/gpxParser.js"></script>
     <script src="js/jpsParser.js"></script>

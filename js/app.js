@@ -71,9 +71,20 @@ class GPSTrackViewer {
             this.handleFiles(e.dataTransfer.files);
         });
 
+        // Map layer selector
+        document.getElementById('mapLayer').addEventListener('change', (e) => {
+            const isDark = document.documentElement.dataset.theme === 'dark';
+            this.mapController.updateTileLayer(isDark, e.target.value);
+        });
+
         // Color mode selector
         document.getElementById('colorMode').addEventListener('change', (e) => {
             this.mapController.updateColorMode(e.target.value);
+        });
+
+        // Export PDF button
+        document.getElementById('exportPdfBtn').addEventListener('click', () => {
+            this.exportToPDF();
         });
 
         // Playback controls
@@ -282,6 +293,132 @@ class GPSTrackViewer {
     }
 
     /**
+     * Export data to PDF
+     */
+    async exportToPDF() {
+        if (!this.currentTrackData) return;
+
+        showLoading();
+
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Title
+            doc.setFontSize(20);
+            doc.text('GPS Track Rapport', 14, 20);
+            
+            doc.setFontSize(10);
+            doc.text(`Fil: ${this.currentTrackData.name}`, 14, 28);
+            doc.text(`Generert: ${new Date().toLocaleString('no-NO')}`, 14, 34);
+
+            // Statistics table
+            const stats = calculateStatistics(this.currentTrackData.points);
+            
+            doc.setFontSize(14);
+            doc.text('Statistikk', 14, 45);
+
+            const statsData = [
+                ['Distanse', formatDistance(stats.distance)],
+                ['Varighet', formatDuration(stats.duration)],
+                ['Gjennomsnittshastighet', formatSpeed(stats.avgSpeed)],
+                ['Maks hastighet', formatSpeed(stats.maxSpeed)],
+                ['Høyeste punkt', formatElevation(stats.maxElevation)],
+                ['Laveste punkt', formatElevation(stats.minElevation)],
+                ['Total stigning', formatElevation(stats.elevationGain)],
+                ['GPS-punkter', stats.pointCount.toLocaleString('no-NO')],
+                ['Maks satellitter', formatSatellites(stats.maxSatellites)],
+                ['HDOP (best)', formatDOP(stats.bestHDOP)],
+                ['VDOP (best)', formatDOP(stats.bestVDOP)],
+                ['PDOP (best)', formatDOP(stats.bestPDOP)],
+                ['HPL (best)', formatProtectionLevel(stats.bestHPL)],
+                ['VPL (best)', formatProtectionLevel(stats.bestVPL)]
+            ];
+
+            doc.autoTable({
+                startY: 50,
+                head: [['Parameter', 'Verdi']],
+                body: statsData,
+                theme: 'grid',
+                headStyles: { fillColor: [59, 130, 246] },
+                margin: { left: 14, right: 14 }
+            });
+
+            // GPS Points table (sample first 50 points)
+            let finalY = doc.lastAutoTable.finalY + 10;
+            
+            if (finalY > 250) {
+                doc.addPage();
+                finalY = 20;
+            }
+
+            doc.setFontSize(14);
+            doc.text('GPS-punkter (første 50)', 14, finalY);
+
+            const pointsData = this.currentTrackData.points.slice(0, 50).map((p, i) => [
+                (i + 1).toString(),
+                p.lat.toFixed(6),
+                p.lon.toFixed(6),
+                p.elevation ? `${Math.round(p.elevation * 3.28084)} ft` : '-',
+                p.speed ? `${(p.speed * 1.94384).toFixed(1)} kn` : '-',
+                p.time ? p.time.toLocaleTimeString('no-NO') : '-'
+            ]);
+
+            doc.autoTable({
+                startY: finalY + 5,
+                head: [['#', 'Bredde', 'Lengde', 'Høyde', 'Hastighet', 'Tid']],
+                body: pointsData,
+                theme: 'grid',
+                headStyles: { fillColor: [59, 130, 246] },
+                styles: { fontSize: 8 },
+                margin: { left: 14, right: 14 }
+            });
+
+            // Add charts as images
+            finalY = doc.lastAutoTable.finalY + 10;
+            
+            if (finalY > 220) {
+                doc.addPage();
+                finalY = 20;
+            }
+
+            doc.setFontSize(14);
+            doc.text('Høydeprofil', 14, finalY);
+            
+            const elevationCanvas = document.getElementById('elevationChart');
+            if (elevationCanvas) {
+                const elevationImg = elevationCanvas.toDataURL('image/png');
+                doc.addImage(elevationImg, 'PNG', 14, finalY + 5, 180, 60);
+                finalY += 70;
+            }
+
+            if (finalY > 200) {
+                doc.addPage();
+                finalY = 20;
+            }
+
+            doc.setFontSize(14);
+            doc.text('Hastighetsprofil', 14, finalY);
+            
+            const speedCanvas = document.getElementById('speedChart');
+            if (speedCanvas) {
+                const speedImg = speedCanvas.toDataURL('image/png');
+                doc.addImage(speedImg, 'PNG', 14, finalY + 5, 180, 60);
+            }
+
+            // Save PDF
+            const fileName = this.currentTrackData.name.replace(/\.[^/.]+$/, '') + '_rapport.pdf';
+            doc.save(fileName);
+
+            hideLoading();
+        } catch (error) {
+            console.error('Error exporting PDF:', error);
+            showError('Kunne ikke eksportere PDF');
+            hideLoading();
+        }
+    }
+
+    /**
      * Toggle theme
      */
     toggleTheme() {
@@ -292,8 +429,9 @@ class GPSTrackViewer {
         html.dataset.theme = newTheme;
         localStorage.setItem('theme', newTheme);
 
-        // Update map tiles
-        this.mapController.updateTileLayer(newTheme === 'dark');
+        // Update map tiles (maintain current layer type)
+        const layerType = this.mapController.currentLayerType || 'street';
+        this.mapController.updateTileLayer(newTheme === 'dark', layerType);
 
         // Update charts
         this.chartController.updateTheme(newTheme === 'dark');
@@ -306,8 +444,8 @@ class GPSTrackViewer {
         const savedTheme = localStorage.getItem('theme') || 'light';
         document.documentElement.dataset.theme = savedTheme;
 
-        // Update map tiles
-        this.mapController.updateTileLayer(savedTheme === 'dark');
+        // Update map tiles with default layer type
+        this.mapController.updateTileLayer(savedTheme === 'dark', 'street');
     }
 }
 

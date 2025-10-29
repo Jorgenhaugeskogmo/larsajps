@@ -23,31 +23,53 @@ class MapController {
 
         // Add tile layer
         const isDark = document.documentElement.dataset.theme === 'dark';
-        this.updateTileLayer(isDark);
+        this.currentLayerType = 'street';
+        this.updateTileLayer(isDark, this.currentLayerType);
 
         return this.map;
     }
 
     /**
-     * Update tile layer based on theme
+     * Update tile layer based on theme and layer type
      */
-    updateTileLayer(isDark) {
+    updateTileLayer(isDark, layerType = 'street') {
         if (this.tileLayer) {
             this.map.removeLayer(this.tileLayer);
         }
 
-        if (isDark) {
-            // Dark theme tiles
-            this.tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+        this.currentLayerType = layerType;
+
+        if (layerType === 'satellite') {
+            // Satellite imagery from Esri
+            this.tileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '© <a href="https://www.esri.com/">Esri</a>',
                 maxZoom: 19
             });
+        } else if (layerType === 'hybrid') {
+            // Satellite with labels
+            const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '© <a href="https://www.esri.com/">Esri</a>',
+                maxZoom: 19
+            });
+            const labels = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+                attribution: '© <a href="https://carto.com/attributions">CARTO</a>',
+                maxZoom: 19,
+                pane: 'overlayPane'
+            });
+            this.tileLayer = L.layerGroup([satellite, labels]);
         } else {
-            // Light theme tiles
-            this.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19
-            });
+            // Street map
+            if (isDark) {
+                this.tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+                    maxZoom: 19
+                });
+            } else {
+                this.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    maxZoom: 19
+                });
+            }
         }
 
         this.tileLayer.addTo(this.map);
