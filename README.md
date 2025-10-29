@@ -8,14 +8,22 @@ En moderne webapplikasjon for visualisering og analyse av GPS-spor.
 
 ## ✨ Funksjoner
 
-- **Interaktiv kartvisning** med OpenStreetMap
+- **Interaktiv kartvisning** med flere kartlag:
+  - Gatekart (OpenStreetMap)
+  - Satellittkart (Esri)
+  - Hybrid (satellitt med veier)
 - **Fargegradient-visualisering** basert på hastighet, høyde eller GPS-nøyaktighet
 - **Detaljert statistikk**: 
   - Distanse (nautiske mil)
   - Hastighet (knop)
   - Høyde (fot)
   - GPS-nøyaktighet (HDOP, VDOP, PDOP)
+  - Beskyttelsesnivåer (HPL, VPL)
   - Satellittinformasjon
+- **PDF-eksport**: 
+  - Komplett rapport med statistikk
+  - GPS-punkter i tabellform
+  - Høydeprofil og hastighetsgraf
 - **Grafiske profiler**: høydeprofil og hastighetsgraf
 - **Avspillingsfunksjon** med animert markør som følger sporet
 - **Drag-and-drop** filopplasting
@@ -58,22 +66,32 @@ Ingen bygging eller installasjon nødvendig!
 
 ### Visualisering
 
-- **Endre farge**: Velg mellom hastighet, høyde eller GPS-nøyaktighet i dropdown-menyen
+- **Bytt kartlag**: Velg mellom gatekart, satellitt eller hybrid i dropdown-menyen
+- **Endre farge**: Velg mellom hastighet, høyde eller GPS-nøyaktighet
 - **Utforsk sporet**: Klikk på sporet for å se detaljerte data for hvert punkt
 - **Avspilling**: Bruk play-knappen for å animere turen, eller dra i tidslinjen
 
 ### Statistikk og grafer
 
-- **Statistikkpanel**: Viser total distanse, varighet, hastighet og høydedata
-- **Høydeprofil**: Graf som viser terrengprofilen
-- **Hastighetsgraf**: Visualiserer hastighetsvariasjoner over tid
+- **Statistikkpanel**: Viser 14 parametre inkl. GPS-nøyaktighet og beskyttelsesnivåer
+- **Høydeprofil**: Graf som viser terrengprofilen (i fot og nautiske mil)
+- **Hastighetsgraf**: Visualiserer hastighetsvariasjoner over tid (i knop)
+
+### Eksport
+
+- **PDF-rapport**: Klikk "Eksporter PDF" for å generere en komplett rapport
+  - Alle statistikker i tabellform
+  - GPS-punkter (første 50) med koordinater, høyde, hastighet
+  - Høydeprofil og hastighetsgraf som bilder
 
 ## 🛠️ Teknologi
 
 - **Vanilla JavaScript** (ES6+)
 - **Leaflet.js** - Interaktive kart
 - **Chart.js** - Grafer og visualisering
-- **OpenStreetMap** / **CARTO** - Kartdata
+- **jsPDF** - PDF-generering
+- **OpenStreetMap** / **CARTO** - Gatekartdata
+- **Esri** - Satellittbilder
 
 ## 📁 Prosjektstruktur
 
