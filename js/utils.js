@@ -160,11 +160,32 @@ function calculateStatistics(points) {
         ? speeds.reduce((a, b) => a + b, 0) / speeds.length 
         : distance / duration;
     
-    // Calculate protection levels based on best (lowest) DOP values
-    const bestHDOP = hdops.length > 0 ? Math.min(...hdops) : null;
-    const bestVDOP = vdops.length > 0 ? Math.min(...vdops) : null;
-    const bestHPL = bestHDOP ? calculateHPL(bestHDOP) : null;
-    const bestVPL = bestVDOP ? calculateVPL(bestVDOP) : null;
+    // Calculate min/max/avg for satellites
+    const minSatellites = satellites.length > 0 ? Math.min(...satellites) : null;
+    const maxSatellites = satellites.length > 0 ? Math.max(...satellites) : null;
+    const avgSatellites = satellites.length > 0 ? satellites.reduce((a, b) => a + b, 0) / satellites.length : null;
+
+    // Calculate min/max/avg for DOP values
+    const minHDOP = hdops.length > 0 ? Math.min(...hdops) : null;
+    const maxHDOP = hdops.length > 0 ? Math.max(...hdops) : null;
+    const avgHDOP = hdops.length > 0 ? hdops.reduce((a, b) => a + b, 0) / hdops.length : null;
+
+    const minVDOP = vdops.length > 0 ? Math.min(...vdops) : null;
+    const maxVDOP = vdops.length > 0 ? Math.max(...vdops) : null;
+    const avgVDOP = vdops.length > 0 ? vdops.reduce((a, b) => a + b, 0) / vdops.length : null;
+
+    const minPDOP = pdops.length > 0 ? Math.min(...pdops) : null;
+    const maxPDOP = pdops.length > 0 ? Math.max(...pdops) : null;
+    const avgPDOP = pdops.length > 0 ? pdops.reduce((a, b) => a + b, 0) / pdops.length : null;
+
+    // Calculate HPL and VPL for min/max/avg
+    const minHPL = minHDOP ? calculateHPL(minHDOP) : null;
+    const maxHPL = maxHDOP ? calculateHPL(maxHDOP) : null;
+    const avgHPL = avgHDOP ? calculateHPL(avgHDOP) : null;
+
+    const minVPL = minVDOP ? calculateVPL(minVDOP) : null;
+    const maxVPL = maxVDOP ? calculateVPL(maxVDOP) : null;
+    const avgVPL = avgVDOP ? calculateVPL(avgVDOP) : null;
 
     return {
         distance,
@@ -175,15 +196,36 @@ function calculateStatistics(points) {
         minElevation: elevations.length > 0 ? Math.min(...elevations) : 0,
         elevationGain,
         pointCount: points.length,
-        maxSatellites: satellites.length > 0 ? Math.max(...satellites) : null,
-        avgHDOP: hdops.length > 0 ? hdops.reduce((a, b) => a + b, 0) / hdops.length : null,
-        avgVDOP: vdops.length > 0 ? vdops.reduce((a, b) => a + b, 0) / vdops.length : null,
-        avgPDOP: pdops.length > 0 ? pdops.reduce((a, b) => a + b, 0) / pdops.length : null,
-        bestHDOP,
-        bestVDOP,
-        bestPDOP: pdops.length > 0 ? Math.min(...pdops) : null,
-        bestHPL,
-        bestVPL
+        
+        // Satellites
+        minSatellites,
+        maxSatellites,
+        avgSatellites,
+        
+        // HDOP
+        minHDOP,
+        maxHDOP,
+        avgHDOP,
+        
+        // VDOP
+        minVDOP,
+        maxVDOP,
+        avgVDOP,
+        
+        // PDOP
+        minPDOP,
+        maxPDOP,
+        avgPDOP,
+        
+        // HPL
+        minHPL,
+        maxHPL,
+        avgHPL,
+        
+        // VPL
+        minVPL,
+        maxVPL,
+        avgVPL
     };
 }
 

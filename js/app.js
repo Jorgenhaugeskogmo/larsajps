@@ -195,12 +195,36 @@ class GPSTrackViewer {
         document.getElementById('statMinElevation').textContent = formatElevation(stats.minElevation);
         document.getElementById('statElevationGain').textContent = formatElevation(stats.elevationGain);
         document.getElementById('statPoints').textContent = stats.pointCount.toLocaleString('no-NO');
+        
+        // Satellites
+        document.getElementById('statMinSatellites').textContent = formatSatellites(stats.minSatellites);
+        document.getElementById('statAvgSatellites').textContent = stats.avgSatellites ? stats.avgSatellites.toFixed(1) : '-';
         document.getElementById('statMaxSatellites').textContent = formatSatellites(stats.maxSatellites);
-        document.getElementById('statHDOP').textContent = formatDOP(stats.bestHDOP);
-        document.getElementById('statVDOP').textContent = formatDOP(stats.bestVDOP);
-        document.getElementById('statPDOP').textContent = formatDOP(stats.bestPDOP);
-        document.getElementById('statHPL').textContent = formatProtectionLevel(stats.bestHPL);
-        document.getElementById('statVPL').textContent = formatProtectionLevel(stats.bestVPL);
+        
+        // HDOP
+        document.getElementById('statMinHDOP').textContent = formatDOP(stats.minHDOP);
+        document.getElementById('statAvgHDOP').textContent = formatDOP(stats.avgHDOP);
+        document.getElementById('statMaxHDOP').textContent = formatDOP(stats.maxHDOP);
+        
+        // VDOP
+        document.getElementById('statMinVDOP').textContent = formatDOP(stats.minVDOP);
+        document.getElementById('statAvgVDOP').textContent = formatDOP(stats.avgVDOP);
+        document.getElementById('statMaxVDOP').textContent = formatDOP(stats.maxVDOP);
+        
+        // PDOP
+        document.getElementById('statMinPDOP').textContent = formatDOP(stats.minPDOP);
+        document.getElementById('statAvgPDOP').textContent = formatDOP(stats.avgPDOP);
+        document.getElementById('statMaxPDOP').textContent = formatDOP(stats.maxPDOP);
+        
+        // HPL
+        document.getElementById('statMinHPL').textContent = formatProtectionLevel(stats.minHPL);
+        document.getElementById('statAvgHPL').textContent = formatProtectionLevel(stats.avgHPL);
+        document.getElementById('statMaxHPL').textContent = formatProtectionLevel(stats.maxHPL);
+        
+        // VPL
+        document.getElementById('statMinVPL').textContent = formatProtectionLevel(stats.minVPL);
+        document.getElementById('statAvgVPL').textContent = formatProtectionLevel(stats.avgVPL);
+        document.getElementById('statMaxVPL').textContent = formatProtectionLevel(stats.maxVPL);
     }
 
     /**
@@ -327,12 +351,13 @@ class GPSTrackViewer {
                 ['Laveste punkt', formatElevation(stats.minElevation)],
                 ['Total stigning', formatElevation(stats.elevationGain)],
                 ['GPS-punkter', stats.pointCount.toLocaleString('no-NO')],
-                ['Maks satellitter', formatSatellites(stats.maxSatellites)],
-                ['HDOP (best)', formatDOP(stats.bestHDOP)],
-                ['VDOP (best)', formatDOP(stats.bestVDOP)],
-                ['PDOP (best)', formatDOP(stats.bestPDOP)],
-                ['HPL (best)', formatProtectionLevel(stats.bestHPL)],
-                ['VPL (best)', formatProtectionLevel(stats.bestVPL)]
+                ['', ''], // Separator
+                ['Satellitter (min/avg/maks)', `${formatSatellites(stats.minSatellites)} / ${stats.avgSatellites ? stats.avgSatellites.toFixed(1) : '-'} / ${formatSatellites(stats.maxSatellites)}`],
+                ['HDOP (min/avg/maks)', `${formatDOP(stats.minHDOP)} / ${formatDOP(stats.avgHDOP)} / ${formatDOP(stats.maxHDOP)}`],
+                ['VDOP (min/avg/maks)', `${formatDOP(stats.minVDOP)} / ${formatDOP(stats.avgVDOP)} / ${formatDOP(stats.maxVDOP)}`],
+                ['PDOP (min/avg/maks)', `${formatDOP(stats.minPDOP)} / ${formatDOP(stats.avgPDOP)} / ${formatDOP(stats.maxPDOP)}`],
+                ['HPL (min/avg/maks)', `${formatProtectionLevel(stats.minHPL)} / ${formatProtectionLevel(stats.avgHPL)} / ${formatProtectionLevel(stats.maxHPL)}`],
+                ['VPL (min/avg/maks)', `${formatProtectionLevel(stats.minVPL)} / ${formatProtectionLevel(stats.avgVPL)} / ${formatProtectionLevel(stats.maxVPL)}`]
             ];
 
             doc.autoTable({
