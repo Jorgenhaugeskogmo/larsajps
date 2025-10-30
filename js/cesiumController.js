@@ -203,10 +203,20 @@ class CesiumController {
         // Set the timeline to the entire range
         this.viewer.timeline.zoomTo(startTime, stopTime);
 
-        // Fly to the track
-        this.viewer.flyTo(this.currentEntity, {
+        // Calculate the bounding sphere from all positions
+        const boundingSphere = Cesium.BoundingSphere.fromPoints(positions);
+        
+        // Calculate appropriate camera distance based on track length
+        const distance = Math.max(5000, boundingSphere.radius * 3);
+        
+        // Fly to the track center
+        this.viewer.camera.flyToBoundingSphere(boundingSphere, {
             duration: 2,
-            offset: new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-45), validPoints.length > 100 ? 5000 : 2000)
+            offset: new Cesium.HeadingPitchRange(
+                0, // heading
+                Cesium.Math.toRadians(-45), // pitch (looking down at 45 degrees)
+                distance // range/distance
+            )
         });
     }
 
