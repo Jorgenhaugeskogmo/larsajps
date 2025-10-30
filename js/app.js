@@ -4,11 +4,14 @@ class GPSTrackViewer {
     constructor() {
         this.mapController = new MapController();
         this.chartController = new ChartController();
+        this.cesiumController = new CesiumController();
         this.weatherController = new WeatherController();
         this.currentTrackData = null;
         this.playbackInterval = null;
         this.playbackIndex = 0;
         this.isPlaying = false;
+        this.is3DMode = false;
+        this.flightCellData = { gps: null, flight: null }; // Store separate FlightCell files
         
         this.init();
     }
@@ -83,6 +86,11 @@ class GPSTrackViewer {
             this.mapController.updateColorMode(e.target.value);
         });
 
+        // 3D View toggle
+        document.getElementById('toggle3DBtn').addEventListener('click', () => {
+            this.toggle3DView();
+        });
+
         // Export PDF button
         document.getElementById('exportPdfBtn').addEventListener('click', () => {
             this.exportToPDF();
@@ -112,20 +120,59 @@ class GPSTrackViewer {
         showLoading();
 
         try {
-            // For now, handle the first file
-            const file = files[0];
-            const extension = file.name.split('.').pop().toLowerCase();
+            // Handle multiple files for FlightCell (GPS + Flight data)
+            const fileArray = Array.from(files);
+            let trackData = null;
 
-            let trackData;
-            if (extension === 'gpx') {
-                trackData = await parseGPX(file);
-            } else if (extension === 'jps') {
-                trackData = await parseJPS(file);
+            // Check if we have FlightCell log files
+            const logFiles = fileArray.filter(f => f.name.endsWith('.log'));
+            
+            if (logFiles.length > 0) {
+                // Handle FlightCell log files
+                for (const file of logFiles) {
+                    const content = await file.text();
+                    const logType = detectFlightCellLogType(content);
+                    
+                    if (logType === 'gps') {
+                        this.flightCellData.gps = parseFlightCellGPS(content);
+                        this.flightCellData.gps.name = file.name;
+                    } else if (logType === 'flight') {
+                        this.flightCellData.flight = parseFlightCellFlightData(content);
+                    }
+                }
+                
+                // If we have GPS data, use it (optionally merge with flight data)
+                if (this.flightCellData.gps) {
+                    trackData = this.flightCellData.gps;
+                    
+                    // Merge with flight data if available
+                    if (this.flightCellData.flight) {
+                        trackData.points = mergeFlightCellData(
+                            this.flightCellData.gps.points,
+                            this.flightCellData.flight
+                        );
+                        trackData.hasOrientation = true;
+                    }
+                }
             } else {
-                throw new Error('Ugyldig filformat. Støtter kun .gpx og .jps filer.');
+                // Handle regular GPS files (GPX or JPS)
+                const file = files[0];
+                const extension = file.name.split('.').pop().toLowerCase();
+
+                if (extension === 'gpx') {
+                    trackData = await parseGPX(file);
+                } else if (extension === 'jps') {
+                    trackData = await parseJPS(file);
+                } else {
+                    throw new Error('Ugyldig filformat. Støtter kun .gpx, .jps og .log filer.');
+                }
             }
 
-            this.loadTrackData(trackData);
+            if (trackData) {
+                this.loadTrackData(trackData);
+            } else {
+                throw new Error('Kunne ikke laste data fra filen(e).');
+            }
         } catch (error) {
             console.error('Error loading file:', error);
             showError(error.message || 'Feil ved lasting av fil');
@@ -182,6 +229,48 @@ class GPSTrackViewer {
 
         // Setup playback
         this.setupPlayback(trackData.points.length);
+
+        // Show 3D button if we have FlightCell data with orientation
+        const toggle3DBtn = document.getElementById('toggle3DBtn');
+        if (trackData.hasOrientation || trackData.type === 'flightcell') {
+            toggle3DBtn.style.display = 'block';
+            
+            // Pre-load data into Cesium (but don't show yet)
+            if (!this.cesiumController.isInitialized) {
+                this.cesiumController.initViewer();
+            }
+        } else {
+            toggle3DBtn.style.display = 'none';
+        }
+    }
+
+    /**
+     * Toggle between 2D and 3D view
+     */
+    toggle3DView() {
+        if (!this.currentTrackData) return;
+
+        this.is3DMode = !this.is3DMode;
+        const toggle3DBtn = document.getElementById('toggle3DBtn');
+
+        if (this.is3DMode) {
+            // Switch to 3D
+            this.cesiumController.show();
+            this.cesiumController.displayTrack(this.currentTrackData);
+            toggle3DBtn.textContent = '2D Visning';
+            toggle3DBtn.querySelector('svg').innerHTML = '<circle cx="12" cy="12" r="10" fill="none"/><path d="M12 2v20M2 12h20"/>';
+        } else {
+            // Switch to 2D
+            this.cesiumController.hide();
+            toggle3DBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                3D Visning
+            `;
+        }
     }
 
     /**
