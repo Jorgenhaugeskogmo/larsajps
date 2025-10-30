@@ -187,10 +187,10 @@ class GPSTrackViewer {
                 }
             }
 
-            if (trackData) {
+            if (trackData && trackData.points && trackData.points.length > 0) {
                 this.loadTrackData(trackData);
             } else {
-                throw new Error('Kunne ikke laste data fra filen(e).');
+                throw new Error('Kunne ikke laste data fra filen(e). Ingen gyldige GPS-punkter funnet.');
             }
         } catch (error) {
             console.error('Error loading file:', error);
@@ -239,6 +239,13 @@ class GPSTrackViewer {
      * Add a new layer
      */
     addLayer(trackData) {
+        // Validate track data
+        if (!trackData || !trackData.points || trackData.points.length === 0) {
+            console.error('Cannot add layer: no valid points');
+            showError('Ingen gyldige GPS-punkter funnet i filen');
+            return;
+        }
+
         const layerId = Date.now();
         const colorIndex = this.layers.length % this.layerColors.length;
         

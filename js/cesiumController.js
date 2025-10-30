@@ -21,8 +21,8 @@ class CesiumController {
             // Set Cesium Ion access token (using default public token)
             Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlYWE1OWUxNy1mMWZiLTQzYjYtYTQ0OS1kMWFjYmFkNjczZTQiLCJpZCI6OTc3MjksImplzIjoxNjY3MzExMzI2fQ.qHgXl4Kswxw9fYmgJmHmdMn5jNMQKJDnxEqWFPl-aQE';
 
+            // Create viewer with basic configuration
             this.viewer = new Cesium.Viewer('cesiumContainer', {
-                terrainProvider: Cesium.createWorldTerrain(),
                 animation: true,
                 baseLayerPicker: true,
                 fullscreenButton: true,
@@ -36,6 +36,15 @@ class CesiumController {
                 navigationHelpButton: false,
                 navigationInstructionsInitiallyVisible: false
             });
+
+            // Try to add terrain provider if available
+            try {
+                if (Cesium.Terrain && Cesium.Terrain.fromWorldTerrain) {
+                    this.viewer.terrainProvider = Cesium.Terrain.fromWorldTerrain();
+                }
+            } catch (e) {
+                console.log('Terrain provider not available, using basic globe');
+            }
 
             // Enable lighting based on sun/moon positions
             this.viewer.scene.globe.enableLighting = true;
@@ -65,20 +74,30 @@ class CesiumController {
         this.trackData = trackData;
         const points = trackData.points;
 
-        if (points.length === 0) return;
+        if (!points || points.length === 0) {
+            console.warn('No points to display in 3D');
+            return;
+        }
+
+        // Filter out invalid points
+        const validPoints = points.filter(p => p && p.lat !== undefined && p.lon !== undefined);
+        if (validPoints.length === 0) {
+            console.warn('No valid points with lat/lon for 3D display');
+            return;
+        }
 
         // Create path positions
-        const positions = points.map(p => 
+        const positions = validPoints.map(p => 
             Cesium.Cartesian3.fromDegrees(p.lon, p.lat, p.elevation || 0)
         );
 
         // Create time-stamped positions for animation
-        const startTime = Cesium.JulianDate.fromDate(points[0].time);
-        const stopTime = Cesium.JulianDate.fromDate(points[points.length - 1].time);
+        const startTime = Cesium.JulianDate.fromDate(validPoints[0].time);
+        const stopTime = Cesium.JulianDate.fromDate(validPoints[validPoints.length - 1].time);
 
         // Create position property with timestamps
         const positionProperty = new Cesium.SampledPositionProperty();
-        points.forEach((point, index) => {
+        validPoints.forEach((point, index) => {
             const time = Cesium.JulianDate.fromDate(point.time);
             const position = Cesium.Cartesian3.fromDegrees(point.lon, point.lat, point.elevation || 0);
             positionProperty.addSample(time, position);
@@ -88,10 +107,10 @@ class CesiumController {
         const orientationProperty = new Cesium.VelocityOrientationProperty(positionProperty);
 
         // If we have pitch/roll data, create custom orientation
-        if (points.some(p => p.pitch !== null && p.pitch !== undefined)) {
+        if (validPoints.some(p => p.pitch !== null && p.pitch !== undefined)) {
             const customOrientation = new Cesium.SampledProperty(Cesium.Quaternion);
             
-            points.forEach(point => {
+            validPoints.forEach(point => {
                 if (point.pitch !== null && point.roll !== null) {
                     const time = Cesium.JulianDate.fromDate(point.time);
                     
@@ -187,7 +206,7 @@ class CesiumController {
         // Fly to the track
         this.viewer.flyTo(this.currentEntity, {
             duration: 2,
-            offset: new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-45), points.length > 100 ? 5000 : 2000)
+            offset: new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-45), validPoints.length > 100 ? 5000 : 2000)
         });
     }
 

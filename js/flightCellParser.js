@@ -13,8 +13,16 @@ function parseFlightCellGPS(fileContent) {
     const points = [];
     
     for (const line of lines) {
+        if (!line.trim()) continue; // Skip empty lines
+        
         try {
             const data = JSON.parse(line);
+            
+            // Validate required fields
+            if (!data.date || !data.time || data.latitude === undefined || data.longitude === undefined) {
+                console.warn('Missing required fields in GPS line');
+                continue;
+            }
             
             // Parse date and time to create timestamp
             const [day, month, year] = data.date.split('/');
@@ -27,19 +35,19 @@ function parseFlightCellGPS(fileContent) {
             const point = {
                 lat: data.latitude,
                 lon: data.longitude,
-                elevation: data.altitude,
+                elevation: data.altitude || 0,
                 time: timestamp,
-                speed: data.speed, // in knots already
-                heading: data.heading,
-                hdop: data.hdop,
-                pdop: data.pdop,
-                satellites: data.satellites,
-                fix: data.fix_type
+                speed: data.speed || 0, // in knots already
+                heading: data.heading || 0,
+                hdop: data.hdop || null,
+                pdop: data.pdop || null,
+                satellites: data.satellites || 0,
+                fix: data.fix_type || 0
             };
             
             points.push(point);
         } catch (error) {
-            console.warn('Error parsing GPS line:', error);
+            console.warn('Error parsing GPS line:', error, line.substring(0, 100));
         }
     }
     

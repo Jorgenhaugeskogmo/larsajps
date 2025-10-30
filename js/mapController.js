@@ -315,18 +315,31 @@ class MapController {
             this.layers = {};
         }
 
+        // Validate points
+        if (!points || points.length === 0) {
+            console.warn('No points to display for layer', layerId);
+            return;
+        }
+
+        // Filter out invalid points
+        const validPoints = points.filter(p => p && p.lat !== undefined && p.lon !== undefined);
+        if (validPoints.length === 0) {
+            console.warn('No valid points with lat/lon for layer', layerId);
+            return;
+        }
+
         // Create polyline segments with popups
         const segments = [];
-        for (let i = 0; i < points.length - 1; i++) {
+        for (let i = 0; i < validPoints.length - 1; i++) {
             const segment = L.polyline([
-                [points[i].lat, points[i].lon],
-                [points[i + 1].lat, points[i + 1].lon]
+                [validPoints[i].lat, validPoints[i].lon],
+                [validPoints[i + 1].lat, validPoints[i + 1].lon]
             ], {
                 color: color,
                 weight: 4,
                 opacity: 0.8
             });
-            segment.bindPopup(this.createPopupContent(points[i + 1], i + 1));
+            segment.bindPopup(this.createPopupContent(validPoints[i + 1], i + 1));
             segments.push(segment);
         }
 
@@ -349,8 +362,8 @@ class MapController {
             iconAnchor: [9, 9]
         });
 
-        const startMarker = L.marker([points[0].lat, points[0].lon], { icon: startIcon })
-            .bindPopup('<b>Start</b><br>' + this.formatTime(points[0].time));
+        const startMarker = L.marker([validPoints[0].lat, validPoints[0].lon], { icon: startIcon })
+            .bindPopup('<b>Start</b><br>' + this.formatTime(validPoints[0].time));
 
         // Add end marker
         const endIcon = L.divIcon({
@@ -370,8 +383,8 @@ class MapController {
             iconAnchor: [9, 9]
         });
 
-        const endMarker = L.marker([points[points.length - 1].lat, points[points.length - 1].lon], { icon: endIcon })
-            .bindPopup('<b>Slutt</b><br>' + this.formatTime(points[points.length - 1].time));
+        const endMarker = L.marker([validPoints[validPoints.length - 1].lat, validPoints[validPoints.length - 1].lon], { icon: endIcon })
+            .bindPopup('<b>Slutt</b><br>' + this.formatTime(validPoints[validPoints.length - 1].time));
 
         // Add to map
         polylineGroup.addTo(this.map);
@@ -383,7 +396,7 @@ class MapController {
             polylineGroup,
             startMarker,
             endMarker,
-            points
+            points: validPoints
         };
     }
 
