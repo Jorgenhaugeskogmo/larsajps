@@ -50,16 +50,17 @@ class CesiumController {
     /**
      * Display track in 3D
      * @param {object} trackData - Track data with points
+     * @param {string} color - Hex color for the track (optional)
      */
-    displayTrack(trackData) {
+    displayTrack(trackData, color = '#FFFF00') {
         if (!this.isInitialized) {
             this.initViewer();
         }
 
         if (!this.viewer) return;
 
-        // Clear existing entities
-        this.viewer.entities.removeAll();
+        // Convert hex color to Cesium Color
+        const cesiumColor = Cesium.Color.fromCssColorString(color);
 
         this.trackData = trackData;
         const points = trackData.points;
@@ -144,7 +145,7 @@ class CesiumController {
                 resolution: 1,
                 material: new Cesium.PolylineGlowMaterialProperty({
                     glowPower: 0.2,
-                    color: Cesium.Color.YELLOW
+                    color: cesiumColor
                 }),
                 width: 3,
                 leadTime: 0,
@@ -168,7 +169,7 @@ class CesiumController {
             polyline: {
                 positions: positions,
                 width: 3,
-                material: new Cesium.PolylineArrowMaterialProperty(Cesium.Color.CYAN),
+                material: new Cesium.PolylineArrowMaterialProperty(cesiumColor),
                 clampToGround: false
             }
         });

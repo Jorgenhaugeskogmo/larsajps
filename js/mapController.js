@@ -308,10 +308,117 @@ class MapController {
     }
 
     /**
+     * Display a single layer with specific color
+     */
+    displayLayer(points, color, layerId) {
+        if (!this.layers) {
+            this.layers = {};
+        }
+
+        // Create polyline segments with popups
+        const segments = [];
+        for (let i = 0; i < points.length - 1; i++) {
+            const segment = L.polyline([
+                [points[i].lat, points[i].lon],
+                [points[i + 1].lat, points[i + 1].lon]
+            ], {
+                color: color,
+                weight: 4,
+                opacity: 0.8
+            });
+            segment.bindPopup(this.createPopupContent(points[i + 1], i + 1));
+            segments.push(segment);
+        }
+
+        const polylineGroup = L.layerGroup(segments);
+
+        // Add start marker
+        const startIcon = L.divIcon({
+            className: 'custom-marker',
+            html: `
+                <div style="
+                    background: ${color};
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                "></div>
+            `,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+        });
+
+        const startMarker = L.marker([points[0].lat, points[0].lon], { icon: startIcon })
+            .bindPopup('<b>Start</b><br>' + this.formatTime(points[0].time));
+
+        // Add end marker
+        const endIcon = L.divIcon({
+            className: 'custom-marker',
+            html: `
+                <div style="
+                    background: ${color};
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                    opacity: 0.7;
+                "></div>
+            `,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+        });
+
+        const endMarker = L.marker([points[points.length - 1].lat, points[points.length - 1].lon], { icon: endIcon })
+            .bindPopup('<b>Slutt</b><br>' + this.formatTime(points[points.length - 1].time));
+
+        // Add to map
+        polylineGroup.addTo(this.map);
+        startMarker.addTo(this.map);
+        endMarker.addTo(this.map);
+
+        // Store layer reference
+        this.layers[layerId] = {
+            polylineGroup,
+            startMarker,
+            endMarker,
+            points
+        };
+    }
+
+    /**
+     * Clear all layers
+     */
+    clearAllLayers() {
+        if (this.layers) {
+            Object.values(this.layers).forEach(layer => {
+                if (layer.polylineGroup) this.map.removeLayer(layer.polylineGroup);
+                if (layer.startMarker) this.map.removeLayer(layer.startMarker);
+                if (layer.endMarker) this.map.removeLayer(layer.endMarker);
+            });
+            this.layers = {};
+        }
+
+        // Clear single track layers too
+        this.clearTrack();
+    }
+
+    /**
+     * Fit map bounds to show all points
+     */
+    fitBounds(points) {
+        if (points && points.length > 0) {
+            const bounds = L.latLngBounds(points.map(p => [p.lat, p.lon]));
+            this.map.fitBounds(bounds, { padding: [50, 50] });
+        }
+    }
+
+    /**
      * Reset map view
      */
     reset() {
-        this.clearTrack();
+        this.clearAllLayers();
         this.map.setView([60.472, 8.469], 6);
     }
 }

@@ -7,6 +7,8 @@ class GPSTrackViewer {
         this.cesiumController = new CesiumController();
         this.weatherController = new WeatherController();
         this.currentTrackData = null;
+        this.layers = []; // Store multiple tracks as layers
+        this.layerColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
         this.playbackInterval = null;
         this.playbackIndex = 0;
         this.isPlaying = false;
@@ -89,6 +91,23 @@ class GPSTrackViewer {
         // 3D View toggle
         document.getElementById('toggle3DBtn').addEventListener('click', () => {
             this.toggle3DView();
+        });
+
+        // Layers panel
+        document.getElementById('layersBtn').addEventListener('click', () => {
+            this.toggleLayersPanel();
+        });
+
+        document.getElementById('closeLayersBtn').addEventListener('click', () => {
+            this.toggleLayersPanel();
+        });
+
+        document.getElementById('addLayerBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('clearAllLayersBtn').addEventListener('click', () => {
+            this.clearAllLayers();
         });
 
         // Export PDF button
@@ -212,43 +231,211 @@ class GPSTrackViewer {
      * Load and display track data
      */
     loadTrackData(trackData) {
-        this.currentTrackData = trackData;
+        // Add as a new layer
+        this.addLayer(trackData);
+    }
 
-        // Hide upload area, show stats panel
+    /**
+     * Add a new layer
+     */
+    addLayer(trackData) {
+        const layerId = Date.now();
+        const colorIndex = this.layers.length % this.layerColors.length;
+        
+        const layer = {
+            id: layerId,
+            data: trackData,
+            visible: true,
+            color: this.layerColors[colorIndex],
+            name: trackData.name || `Spor ${this.layers.length + 1}`
+        };
+        
+        this.layers.push(layer);
+        this.currentTrackData = trackData; // Set as current for stats/charts
+        
+        // Hide upload area, show panels
         this.showStatsPanel();
-
-        // Display track on map
-        this.mapController.displayTrack(trackData.points);
-
-        // Calculate and display statistics
+        
+        // Show layers button
+        document.getElementById('layersBtn').style.display = 'block';
+        document.getElementById('toggle3DBtn').style.display = this.has3DCapableLayer() ? 'block' : 'none';
+        
+        // Update layer count
+        this.updateLayerCount();
+        
+        // Render layer in UI
+        this.renderLayers();
+        
+        // Display all visible layers
+        this.displayAllLayers();
+        
+        // Update stats and charts for current track
         const stats = calculateStatistics(trackData.points);
         this.displayStatistics(stats);
-
-        // Initialize charts
         this.chartController.initCharts(trackData.points);
-
-        // Setup playback
         this.setupPlayback(trackData.points.length);
+    }
 
-        // Show 3D button if we have FlightCell data with orientation
-        const toggle3DBtn = document.getElementById('toggle3DBtn');
-        if (trackData.hasOrientation || trackData.type === 'flightcell') {
-            toggle3DBtn.style.display = 'block';
-            
-            // Pre-load data into Cesium (but don't show yet)
-            if (!this.cesiumController.isInitialized) {
-                this.cesiumController.initViewer();
-            }
+    /**
+     * Check if any layer has 3D capability
+     */
+    has3DCapableLayer() {
+        return this.layers.some(layer => 
+            layer.data.hasOrientation || layer.data.type === 'flightcell'
+        );
+    }
+
+    /**
+     * Display all visible layers on map/3D
+     */
+    displayAllLayers() {
+        if (this.is3DMode) {
+            // Display in 3D
+            this.cesiumController.clear();
+            this.layers.forEach(layer => {
+                if (layer.visible) {
+                    this.cesiumController.displayTrack(layer.data, layer.color);
+                }
+            });
         } else {
-            toggle3DBtn.style.display = 'none';
+            // Display in 2D
+            this.mapController.clearAllLayers();
+            this.layers.forEach(layer => {
+                if (layer.visible) {
+                    this.mapController.displayLayer(layer.data.points, layer.color, layer.id);
+                }
+            });
+            
+            // Fit bounds to show all layers
+            if (this.layers.length > 0) {
+                const allPoints = this.layers
+                    .filter(l => l.visible)
+                    .flatMap(l => l.data.points);
+                this.mapController.fitBounds(allPoints);
+            }
         }
+    }
+
+    /**
+     * Render layers list in UI
+     */
+    renderLayers() {
+        const layersList = document.getElementById('layersList');
+        layersList.innerHTML = '';
+        
+        this.layers.forEach(layer => {
+            const layerItem = document.createElement('div');
+            layerItem.className = 'layer-item';
+            layerItem.innerHTML = `
+                <div class="layer-color" style="background-color: ${layer.color};"></div>
+                <div class="layer-info">
+                    <div class="layer-name">${layer.name}</div>
+                    <div class="layer-stats">${layer.data.points.length} punkter</div>
+                </div>
+                <div class="layer-actions">
+                    <button class="icon-btn" data-action="toggle" data-layer-id="${layer.id}" title="${layer.visible ? 'Skjul' : 'Vis'}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            ${layer.visible ? 
+                                '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>' :
+                                '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+                            }
+                        </svg>
+                    </button>
+                    <button class="icon-btn" data-action="remove" data-layer-id="${layer.id}" title="Fjern">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </button>
+                </div>
+            `;
+            
+            // Add event listeners
+            const toggleBtn = layerItem.querySelector('[data-action="toggle"]');
+            const removeBtn = layerItem.querySelector('[data-action="remove"]');
+            
+            toggleBtn.addEventListener('click', () => this.toggleLayer(layer.id));
+            removeBtn.addEventListener('click', () => this.removeLayer(layer.id));
+            
+            layersList.appendChild(layerItem);
+        });
+    }
+
+    /**
+     * Toggle layer visibility
+     */
+    toggleLayer(layerId) {
+        const layer = this.layers.find(l => l.id === layerId);
+        if (layer) {
+            layer.visible = !layer.visible;
+            this.renderLayers();
+            this.displayAllLayers();
+        }
+    }
+
+    /**
+     * Remove a layer
+     */
+    removeLayer(layerId) {
+        const index = this.layers.findIndex(l => l.id === layerId);
+        if (index !== -1) {
+            this.layers.splice(index, 1);
+            this.updateLayerCount();
+            this.renderLayers();
+            this.displayAllLayers();
+            
+            // Update current track if needed
+            if (this.layers.length > 0) {
+                this.currentTrackData = this.layers[this.layers.length - 1].data;
+                const stats = calculateStatistics(this.currentTrackData.points);
+                this.displayStatistics(stats);
+                this.chartController.initCharts(this.currentTrackData.points);
+            } else {
+                // No layers left, show upload area
+                this.showUploadArea();
+                document.getElementById('layersBtn').style.display = 'none';
+                document.getElementById('toggle3DBtn').style.display = 'none';
+            }
+        }
+    }
+
+    /**
+     * Clear all layers
+     */
+    clearAllLayers() {
+        if (confirm('Er du sikker på at du vil fjerne alle spor?')) {
+            this.layers = [];
+            this.mapController.clearAllLayers();
+            this.cesiumController.clear();
+            this.showUploadArea();
+            this.updateLayerCount();
+            this.renderLayers();
+            document.getElementById('layersBtn').style.display = 'none';
+            document.getElementById('toggle3DBtn').style.display = 'none';
+            document.getElementById('layersPanel').style.display = 'none';
+        }
+    }
+
+    /**
+     * Update layer count in UI
+     */
+    updateLayerCount() {
+        document.getElementById('layerCount').textContent = this.layers.length;
+    }
+
+    /**
+     * Toggle layers panel
+     */
+    toggleLayersPanel() {
+        const panel = document.getElementById('layersPanel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
     }
 
     /**
      * Toggle between 2D and 3D view
      */
     toggle3DView() {
-        if (!this.currentTrackData) return;
+        if (this.layers.length === 0) return;
 
         this.is3DMode = !this.is3DMode;
         const toggle3DBtn = document.getElementById('toggle3DBtn');
@@ -256,12 +443,18 @@ class GPSTrackViewer {
         if (this.is3DMode) {
             // Switch to 3D
             this.cesiumController.show();
-            this.cesiumController.displayTrack(this.currentTrackData);
-            toggle3DBtn.textContent = '2D Visning';
-            toggle3DBtn.querySelector('svg').innerHTML = '<circle cx="12" cy="12" r="10" fill="none"/><path d="M12 2v20M2 12h20"/>';
+            this.displayAllLayers();
+            toggle3DBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 2v20M2 12h20"/>
+                </svg>
+                2D Visning
+            `;
         } else {
             // Switch to 2D
             this.cesiumController.hide();
+            this.displayAllLayers();
             toggle3DBtn.innerHTML = `
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 2L2 7l10 5 10-5-10-5z"/>
