@@ -4,6 +4,7 @@ class GPSTrackViewer {
     constructor() {
         this.mapController = new MapController();
         this.chartController = new ChartController();
+        this.weatherController = new WeatherController();
         this.currentTrackData = null;
         this.playbackInterval = null;
         this.playbackIndex = 0;
@@ -457,6 +458,9 @@ class GPSTrackViewer {
         // Update map tiles (maintain current layer type)
         const layerType = this.mapController.currentLayerType || 'street';
         this.mapController.updateTileLayer(newTheme === 'dark', layerType);
+        
+        // Update weather charts if modal is open
+        this.weatherController.updateTheme();
 
         // Update charts
         this.chartController.updateTheme(newTheme === 'dark');

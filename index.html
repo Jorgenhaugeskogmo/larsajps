@@ -47,6 +47,12 @@
                         </svg>
                         Last eksempeldata
                     </button>
+                    <button id="weatherViewBtn" class="btn btn-secondary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+                        </svg>
+                        Værdata Voss
+                    </button>
                 </div>
             </div>
         </header>
@@ -402,6 +408,67 @@
         </main>
     </div>
 
+    <!-- Weather Data Modal -->
+    <div id="weatherModal" class="weather-modal" style="display: none;">
+        <div class="weather-modal-content">
+            <div class="weather-modal-header">
+                <h2>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+                    </svg>
+                    Værdata Voss - Normalverdier (1991-2020)
+                </h2>
+                <button id="closeWeatherModal" class="icon-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="weather-content">
+                <!-- Station Selector -->
+                <div class="station-selector">
+                    <button class="station-btn active" data-station="vossevangen">Vossevangen (54 moh.)</button>
+                    <button class="station-btn" data-station="bulken">Bulken (328 moh.)</button>
+                    <button class="station-btn" data-station="compare">Sammenlign</button>
+                </div>
+
+                <!-- Weather Charts -->
+                <div class="weather-charts">
+                    <div class="weather-chart-card">
+                        <h3>Månedlig Normaltemperatur</h3>
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                    <div class="weather-chart-card">
+                        <h3>Månedlig Normalnedbør</h3>
+                        <canvas id="precipChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Summary Stats -->
+                <div class="weather-summary">
+                    <div class="weather-stat-card">
+                        <div class="weather-stat-label">Årsmiddeltemperatur</div>
+                        <div class="weather-stat-value" id="yearlyTempValue">-</div>
+                    </div>
+                    <div class="weather-stat-card">
+                        <div class="weather-stat-label">Årsnedbør</div>
+                        <div class="weather-stat-value" id="yearlyPrecipValue">-</div>
+                    </div>
+                </div>
+
+                <!-- Daily Temperature Data -->
+                <div class="weather-daily-section">
+                    <h3>Døgntemperaturnormaler</h3>
+                    <div class="weather-chart-card">
+                        <canvas id="dailyTempChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay" style="display: none;">
         <div class="loading-spinner"></div>
@@ -418,6 +485,8 @@
     <script src="js/jpsParser.js"></script>
     <script src="js/chartController.js"></script>
     <script src="js/mapController.js"></script>
+    <script src="js/weatherData.js"></script>
+    <script src="js/weatherController.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

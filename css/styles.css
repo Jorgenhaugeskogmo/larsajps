@@ -728,3 +728,197 @@ body {
     background: var(--color-bg-elevated);
 }
 
+/* ==================== Weather Modal ==================== */
+.weather-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.weather-modal-content {
+    background: var(--color-bg-primary);
+    border-radius: var(--radius-xl);
+    width: 100%;
+    max-width: 1200px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--color-border);
+}
+
+.weather-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    background: var(--color-bg-primary);
+    backdrop-filter: blur(20px);
+    z-index: 10;
+}
+
+.weather-modal-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--color-text-primary);
+}
+
+.weather-modal-header svg {
+    color: var(--color-primary);
+}
+
+.weather-content {
+    padding: 2rem;
+}
+
+/* Station Selector */
+.station-selector {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.station-btn {
+    padding: 0.75rem 1.5rem;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.station-btn:hover {
+    background: var(--color-bg-elevated);
+    border-color: var(--color-primary);
+}
+
+.station-btn.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+/* Weather Charts */
+.weather-charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.weather-chart-card {
+    background: var(--color-surface);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+}
+
+.weather-chart-card h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.125rem;
+    color: var(--color-text-primary);
+}
+
+.weather-chart-card canvas {
+    max-height: 300px;
+}
+
+/* Weather Summary */
+.weather-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.weather-stat-card {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    text-align: center;
+    color: white;
+}
+
+.weather-stat-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    opacity: 0.9;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.weather-stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* Daily Section */
+.weather-daily-section {
+    margin-top: 2rem;
+}
+
+.weather-daily-section h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    color: var(--color-text-primary);
+}
+
+.weather-daily-section .weather-chart-card canvas {
+    max-height: 400px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .weather-modal {
+        padding: 1rem;
+    }
+    
+    .weather-modal-content {
+        max-height: 95vh;
+    }
+    
+    .weather-modal-header {
+        padding: 1rem;
+    }
+    
+    .weather-modal-header h2 {
+        font-size: 1.125rem;
+    }
+    
+    .weather-content {
+        padding: 1rem;
+    }
+    
+    .weather-charts {
+        grid-template-columns: 1fr;
+    }
+    
+    .station-selector {
+        flex-direction: column;
+    }
+    
+    .station-btn {
+        width: 100%;
+    }
+}
+
