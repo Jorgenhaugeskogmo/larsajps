@@ -33,7 +33,7 @@ class CesiumController {
                 sceneModePicker: true,
                 selectionIndicator: true,
                 timeline: true,
-                navigationHelpButton: false,
+                navigationHelpButton: true, // Enable navigation help
                 navigationInstructionsInitiallyVisible: false,
                 // Use basic terrain (no token required)
                 terrainProvider: new Cesium.EllipsoidTerrainProvider()
@@ -63,8 +63,34 @@ class CesiumController {
             // Set background color
             this.viewer.scene.backgroundColor = Cesium.Color.BLACK;
 
+            // Configure camera controls for better navigation
+            const scene = this.viewer.scene;
+            const camera = this.viewer.camera;
+            
+            // Enable better camera controls
+            scene.screenSpaceCameraController.enableRotate = true;
+            scene.screenSpaceCameraController.enableTranslate = true;
+            scene.screenSpaceCameraController.enableZoom = true;
+            scene.screenSpaceCameraController.enableTilt = true;
+            scene.screenSpaceCameraController.enableLook = true;
+            
+            // Set rotation speed
+            scene.screenSpaceCameraController.inertiaSpin = 0.9;
+            scene.screenSpaceCameraController.inertiaTranslate = 0.9;
+            scene.screenSpaceCameraController.inertiaZoom = 0.8;
+            
+            // Minimum and maximum zoom distances
+            scene.screenSpaceCameraController.minimumZoomDistance = 100; // 100 meters
+            scene.screenSpaceCameraController.maximumZoomDistance = 10000000; // 10,000 km
+
             this.isInitialized = true;
             console.log('Cesium viewer initialized successfully');
+            console.log('Navigasjonskontroller:');
+            console.log('- Venstre museknapp + dra: Roter kamera');
+            console.log('- Høyre museknapp + dra: Zoom inn/ut');
+            console.log('- Midtre museknapp + dra: Pan');
+            console.log('- Mushjul: Zoom');
+            console.log('- Ctrl + venstre/høyre: Tilt kamera');
         } catch (error) {
             console.error('Error initializing Cesium:', error);
             showError('Kunne ikke initialisere 3D-visning');
