@@ -18,13 +18,13 @@ class CesiumController {
         if (this.isInitialized) return;
 
         try {
-            // Set Cesium Ion access token (using default public token)
-            Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlYWE1OWUxNy1mMWZiLTQzYjYtYTQ0OS1kMWFjYmFkNjczZTQiLCJpZCI6OTc3MjksImplzIjoxNjY3MzExMzI2fQ.qHgXl4Kswxw9fYmgJmHmdMn5jNMQKJDnxEqWFPl-aQE';
+            // Don't use Cesium Ion - use free OpenStreetMap imagery instead
+            Cesium.Ion.defaultAccessToken = undefined;
 
             // Create viewer with basic configuration
             this.viewer = new Cesium.Viewer('cesiumContainer', {
                 animation: true,
-                baseLayerPicker: true,
+                baseLayerPicker: false, // Disable to avoid Ion dependency
                 fullscreenButton: true,
                 vrButton: false,
                 geocoder: false,
@@ -34,22 +34,25 @@ class CesiumController {
                 selectionIndicator: true,
                 timeline: true,
                 navigationHelpButton: false,
-                navigationInstructionsInitiallyVisible: false
+                navigationInstructionsInitiallyVisible: false,
+                // Use OpenStreetMap as base imagery (no token required)
+                imageryProvider: new Cesium.OpenStreetMapImageryProvider({
+                    url: 'https://tile.openstreetmap.org/'
+                }),
+                // Use basic terrain (no token required)
+                terrainProvider: new Cesium.EllipsoidTerrainProvider()
             });
-
-            // Try to add terrain provider if available
-            try {
-                if (Cesium.Terrain && Cesium.Terrain.fromWorldTerrain) {
-                    this.viewer.terrainProvider = Cesium.Terrain.fromWorldTerrain();
-                }
-            } catch (e) {
-                console.log('Terrain provider not available, using basic globe');
-            }
 
             // Enable lighting based on sun/moon positions
             this.viewer.scene.globe.enableLighting = true;
+            
+            // Set better default lighting
+            this.viewer.scene.light = new Cesium.DirectionalLight({
+                direction: new Cesium.Cartesian3(0.5, 0.5, -1)
+            });
 
             this.isInitialized = true;
+            console.log('Cesium viewer initialized successfully');
         } catch (error) {
             console.error('Error initializing Cesium:', error);
             showError('Kunne ikke initialisere 3D-visning');
@@ -219,19 +222,36 @@ class CesiumController {
         const latSpan = maxLat - minLat;
         const lonSpan = maxLon - minLon;
         
+        console.log('Track center:', centerLat, centerLon);
+        console.log('Track span:', latSpan, lonSpan);
+        console.log('First point:', validPoints[0].lat, validPoints[0].lon, validPoints[0].elevation);
+        
         // Calculate appropriate viewing distance based on track extent
         const maxSpan = Math.max(latSpan, lonSpan);
         const distance = maxSpan > 0.1 ? 50000 : (maxSpan > 0.01 ? 15000 : 5000);
         
-        // Use setView for immediate, reliable positioning
-        this.viewer.camera.setView({
-            destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, distance),
-            orientation: {
-                heading: 0.0,
-                pitch: Cesium.Math.toRadians(-60), // Looking down
-                roll: 0.0
+        console.log('Camera distance:', distance);
+        
+        // Wait a bit for viewer to be ready, then position camera
+        setTimeout(() => {
+            try {
+                // Try different approach: use flyTo with explicit coordinates
+                this.viewer.camera.flyTo({
+                    destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, distance),
+                    orientation: {
+                        heading: 0.0,
+                        pitch: Cesium.Math.toRadians(-60),
+                        roll: 0.0
+                    },
+                    duration: 2,
+                    complete: () => {
+                        console.log('Camera positioned at:', centerLat, centerLon, distance);
+                    }
+                });
+            } catch (e) {
+                console.error('Error positioning camera:', e);
             }
-        });
+        }, 100);
     }
 
     /**
