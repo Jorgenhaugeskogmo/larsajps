@@ -136,7 +136,7 @@ class CesiumController {
             orientationProperty.setValue = customOrientation.getValue.bind(customOrientation);
         }
 
-        // Create aircraft entity
+        // Create aircraft entity with simple visual representation
         this.currentEntity = this.viewer.entities.add({
             availability: new Cesium.TimeIntervalCollection([
                 new Cesium.TimeInterval({
@@ -147,40 +147,37 @@ class CesiumController {
             position: positionProperty,
             orientation: orientationProperty,
             
-            // Aircraft model (using built-in Cesium airplane or simple shape)
-            model: {
-                uri: 'data:image/svg+xml;base64,' + btoa(this.createHelicopterSVG()),
-                minimumPixelSize: 64,
-                maximumScale: 2000
-            },
-            
-            // Fallback to a simple shape if model fails
-            point: {
-                pixelSize: 10,
-                color: Cesium.Color.RED,
+            // Use a simple cylinder to represent the aircraft
+            cylinder: {
+                length: 50,
+                topRadius: 10,
+                bottomRadius: 10,
+                material: cesiumColor,
+                outline: true,
                 outlineColor: Cesium.Color.WHITE,
                 outlineWidth: 2
             },
             
-            // Path line
+            // Path line showing the trail
             path: {
                 resolution: 1,
                 material: new Cesium.PolylineGlowMaterialProperty({
                     glowPower: 0.2,
                     color: cesiumColor
                 }),
-                width: 3,
+                width: 5,
                 leadTime: 0,
                 trailTime: 100000 // Show trail behind
             },
             
             label: {
-                text: trackData.name,
+                text: trackData.name || 'GPS Track',
                 font: '14pt sans-serif',
                 style: Cesium.LabelStyle.FILL_AND_OUTLINE,
                 outlineWidth: 2,
                 verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-                pixelOffset: new Cesium.Cartesian2(0, -20)
+                pixelOffset: new Cesium.Cartesian2(0, -30),
+                fillColor: Cesium.Color.WHITE
             },
             
             description: this.createEntityDescription(trackData)
@@ -254,30 +251,6 @@ class CesiumController {
         }, 100);
     }
 
-    /**
-     * Create a simple helicopter SVG for visualization
-     * @returns {string} Base64 encoded SVG
-     */
-    createHelicopterSVG() {
-        // Simple helicopter icon
-        return `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-            <g transform="translate(50,50) rotate(0)">
-                <!-- Rotor -->
-                <ellipse cx="0" cy="0" rx="45" ry="5" fill="#333" opacity="0.3"/>
-                <!-- Body -->
-                <ellipse cx="0" cy="5" rx="15" ry="20" fill="#FF6B6B"/>
-                <!-- Tail -->
-                <rect x="-3" y="15" width="6" height="25" fill="#FF6B6B"/>
-                <!-- Tail rotor -->
-                <circle cx="0" cy="42" r="5" fill="#333" opacity="0.3"/>
-                <!-- Skids -->
-                <rect x="-20" y="23" width="40" height="2" fill="#333"/>
-                <rect x="-18" y="20" width="2" height="5" fill="#333"/>
-                <rect x="16" y="20" width="2" height="5" fill="#333"/>
-            </g>
-        </svg>`;
-    }
 
     /**
      * Create entity description HTML
