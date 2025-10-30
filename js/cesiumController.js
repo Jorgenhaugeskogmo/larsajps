@@ -203,20 +203,34 @@ class CesiumController {
         // Set the timeline to the entire range
         this.viewer.timeline.zoomTo(startTime, stopTime);
 
-        // Calculate the bounding sphere from all positions
-        const boundingSphere = Cesium.BoundingSphere.fromPoints(positions);
+        // Calculate center point of the track
+        let sumLat = 0, sumLon = 0, minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+        validPoints.forEach(p => {
+            sumLat += p.lat;
+            sumLon += p.lon;
+            minLat = Math.min(minLat, p.lat);
+            maxLat = Math.max(maxLat, p.lat);
+            minLon = Math.min(minLon, p.lon);
+            maxLon = Math.max(maxLon, p.lon);
+        });
         
-        // Calculate appropriate camera distance based on track length
-        const distance = Math.max(5000, boundingSphere.radius * 3);
+        const centerLat = sumLat / validPoints.length;
+        const centerLon = sumLon / validPoints.length;
+        const latSpan = maxLat - minLat;
+        const lonSpan = maxLon - minLon;
         
-        // Fly to the track center
-        this.viewer.camera.flyToBoundingSphere(boundingSphere, {
-            duration: 2,
-            offset: new Cesium.HeadingPitchRange(
-                0, // heading
-                Cesium.Math.toRadians(-45), // pitch (looking down at 45 degrees)
-                distance // range/distance
-            )
+        // Calculate appropriate viewing distance based on track extent
+        const maxSpan = Math.max(latSpan, lonSpan);
+        const distance = maxSpan > 0.1 ? 50000 : (maxSpan > 0.01 ? 15000 : 5000);
+        
+        // Use setView for immediate, reliable positioning
+        this.viewer.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, distance),
+            orientation: {
+                heading: 0.0,
+                pitch: Cesium.Math.toRadians(-60), // Looking down
+                roll: 0.0
+            }
         });
     }
 
