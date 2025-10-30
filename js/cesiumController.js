@@ -18,7 +18,7 @@ class CesiumController {
         if (this.isInitialized) return;
 
         try {
-            // Don't use Cesium Ion - use free OpenStreetMap imagery instead
+            // Don't use Cesium Ion - use free services instead
             Cesium.Ion.defaultAccessToken = undefined;
 
             // Create viewer with basic configuration
@@ -35,21 +35,33 @@ class CesiumController {
                 timeline: true,
                 navigationHelpButton: false,
                 navigationInstructionsInitiallyVisible: false,
-                // Use OpenStreetMap as base imagery (no token required)
-                imageryProvider: new Cesium.OpenStreetMapImageryProvider({
-                    url: 'https://tile.openstreetmap.org/'
-                }),
                 // Use basic terrain (no token required)
                 terrainProvider: new Cesium.EllipsoidTerrainProvider()
             });
 
-            // Enable lighting based on sun/moon positions
-            this.viewer.scene.globe.enableLighting = true;
+            // Remove default imagery layers and add our own
+            this.viewer.imageryLayers.removeAll();
             
-            // Set better default lighting
-            this.viewer.scene.light = new Cesium.DirectionalLight({
-                direction: new Cesium.Cartesian3(0.5, 0.5, -1)
-            });
+            // Add OpenStreetMap imagery layer
+            const osmLayer = this.viewer.imageryLayers.addImageryProvider(
+                new Cesium.UrlTemplateImageryProvider({
+                    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    maximumLevel: 19,
+                    credit: '© OpenStreetMap contributors'
+                })
+            );
+            
+            // Ensure the globe is visible
+            this.viewer.scene.globe.show = true;
+            this.viewer.scene.skyBox.show = true;
+            this.viewer.scene.sun.show = true;
+            this.viewer.scene.moon.show = false;
+            
+            // Enable lighting
+            this.viewer.scene.globe.enableLighting = false; // Disable lighting for better visibility
+            
+            // Set background color
+            this.viewer.scene.backgroundColor = Cesium.Color.BLACK;
 
             this.isInitialized = true;
             console.log('Cesium viewer initialized successfully');
