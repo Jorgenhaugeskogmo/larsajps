@@ -32,6 +32,11 @@ class WeatherController {
             }
         });
         
+        // Export PDF button
+        document.getElementById('exportWeatherPdfBtn').addEventListener('click', () => {
+            this.exportToPDF();
+        });
+        
         // Station selector buttons
         document.querySelectorAll('.station-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -474,6 +479,255 @@ class WeatherController {
             } else {
                 this.updateCharts();
             }
+        }
+    }
+    
+    async exportToPDF() {
+        showLoading();
+        
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Check if we're in comparison mode
+            const activeBtn = document.querySelector('.station-btn.active');
+            const isComparison = activeBtn && activeBtn.dataset.station === 'compare';
+            
+            // Title
+            doc.setFontSize(20);
+            doc.text('Værdata Voss - Normalverdier', 14, 20);
+            doc.setFontSize(10);
+            doc.text('Periode: 1991-2020', 14, 28);
+            doc.text(`Kilde: Meteorologisk Institutt`, 14, 34);
+            doc.text(`Generert: ${new Date().toLocaleString('no-NO')}`, 14, 40);
+            
+            if (isComparison) {
+                // Comparison mode - show both stations
+                this.exportComparisonPDF(doc);
+            } else {
+                // Single station mode
+                this.exportSingleStationPDF(doc);
+            }
+            
+            // Save PDF
+            const fileName = isComparison 
+                ? 'Voss_Værdata_Sammenligning.pdf' 
+                : `Voss_Værdata_${weatherData[this.currentStation].name}.pdf`;
+            doc.save(fileName);
+            
+            hideLoading();
+        } catch (error) {
+            console.error('Error exporting PDF:', error);
+            showError('Kunne ikke eksportere PDF');
+            hideLoading();
+        }
+    }
+    
+    exportSingleStationPDF(doc) {
+        const data = weatherData[this.currentStation];
+        
+        // Station info
+        doc.setFontSize(14);
+        doc.text(`Stasjon: ${data.name}`, 14, 50);
+        doc.setFontSize(10);
+        doc.text(`Høyde: ${data.elevation} | Stasjon ID: ${data.stationId}`, 14, 56);
+        
+        // Summary statistics
+        doc.setFontSize(12);
+        doc.text('Årsoversikt', 14, 66);
+        const summaryData = [
+            ['Årsmiddeltemperatur', `${data.yearlyTemp.toFixed(1)}°C`],
+            ['Total årsnedbør', `${data.yearlyPrecip} mm`]
+        ];
+        
+        doc.autoTable({
+            startY: 70,
+            head: [['Parameter', 'Verdi']],
+            body: summaryData,
+            theme: 'grid',
+            headStyles: { fillColor: [59, 130, 246] },
+            margin: { left: 14, right: 14 }
+        });
+        
+        // Monthly temperature data
+        let finalY = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(12);
+        doc.text('Månedlig Normaltemperatur', 14, finalY);
+        
+        const tempData = monthNames.map((month, idx) => [
+            month,
+            `${data.monthlyTemp[idx].toFixed(1)}°C`
+        ]);
+        
+        doc.autoTable({
+            startY: finalY + 5,
+            head: [['Måned', 'Temperatur']],
+            body: tempData,
+            theme: 'grid',
+            headStyles: { fillColor: [239, 68, 68] },
+            margin: { left: 14, right: 105 },
+            tableWidth: 85
+        });
+        
+        // Monthly precipitation data (next to temperature)
+        doc.setFontSize(12);
+        doc.text('Månedlig Normalnedbør', 109, finalY);
+        
+        const precipData = monthNames.map((month, idx) => [
+            month,
+            `${data.monthlyPrecip[idx]} mm`
+        ]);
+        
+        doc.autoTable({
+            startY: finalY + 5,
+            head: [['Måned', 'Nedbør']],
+            body: precipData,
+            theme: 'grid',
+            headStyles: { fillColor: [59, 130, 246] },
+            margin: { left: 109, right: 14 },
+            tableWidth: 85
+        });
+        
+        // Add charts as images
+        finalY = Math.max(doc.lastAutoTable.finalY || 0, doc.previousAutoTable?.finalY || 0) + 10;
+        
+        if (finalY > 220) {
+            doc.addPage();
+            finalY = 20;
+        }
+        
+        doc.setFontSize(12);
+        doc.text('Temperaturprofil', 14, finalY);
+        const tempCanvas = document.getElementById('tempChart');
+        if (tempCanvas) {
+            const tempImg = tempCanvas.toDataURL('image/png');
+            doc.addImage(tempImg, 'PNG', 14, finalY + 5, 180, 70);
+            finalY += 80;
+        }
+        
+        if (finalY > 200) {
+            doc.addPage();
+            finalY = 20;
+        }
+        
+        doc.setFontSize(12);
+        doc.text('Nedbørprofil', 14, finalY);
+        const precipCanvas = document.getElementById('precipChart');
+        if (precipCanvas) {
+            const precipImg = precipCanvas.toDataURL('image/png');
+            doc.addImage(precipImg, 'PNG', 14, finalY + 5, 180, 70);
+        }
+    }
+    
+    exportComparisonPDF(doc) {
+        const voss = weatherData.vossevangen;
+        const bulk = weatherData.bulken;
+        
+        // Title for comparison
+        doc.setFontSize(14);
+        doc.text('Sammenligning: Vossevangen vs Bulken', 14, 50);
+        
+        // Summary comparison
+        doc.setFontSize(12);
+        doc.text('Årsoversikt', 14, 60);
+        
+        const summaryData = [
+            ['', voss.name, bulk.name, 'Differanse'],
+            ['Høyde', voss.elevation, bulk.elevation, '-'],
+            ['Årsmiddeltemperatur', `${voss.yearlyTemp.toFixed(1)}°C`, `${bulk.yearlyTemp.toFixed(1)}°C`, `${(voss.yearlyTemp - bulk.yearlyTemp).toFixed(1)}°C`],
+            ['Årsnedbør', `${voss.yearlyPrecip} mm`, `${bulk.yearlyPrecip} mm`, `${bulk.yearlyPrecip - voss.yearlyPrecip} mm (+${((bulk.yearlyPrecip / voss.yearlyPrecip - 1) * 100).toFixed(0)}%)`]
+        ];
+        
+        doc.autoTable({
+            startY: 65,
+            body: summaryData,
+            theme: 'grid',
+            headStyles: { fillColor: [59, 130, 246] },
+            margin: { left: 14, right: 14 },
+            columnStyles: {
+                0: { fontStyle: 'bold' }
+            }
+        });
+        
+        // Monthly comparison table
+        let finalY = doc.lastAutoTable.finalY + 10;
+        if (finalY > 200) {
+            doc.addPage();
+            finalY = 20;
+        }
+        
+        doc.setFontSize(12);
+        doc.text('Månedlig Temperatursammenligning', 14, finalY);
+        
+        const tempCompareData = monthNames.map((month, idx) => [
+            month,
+            `${voss.monthlyTemp[idx].toFixed(1)}°C`,
+            `${bulk.monthlyTemp[idx].toFixed(1)}°C`,
+            `${(voss.monthlyTemp[idx] - bulk.monthlyTemp[idx]).toFixed(1)}°C`
+        ]);
+        
+        doc.autoTable({
+            startY: finalY + 5,
+            head: [['Måned', voss.name, bulk.name, 'Diff']],
+            body: tempCompareData,
+            theme: 'grid',
+            headStyles: { fillColor: [239, 68, 68] },
+            margin: { left: 14, right: 14 }
+        });
+        
+        // Precipitation comparison
+        finalY = doc.lastAutoTable.finalY + 10;
+        if (finalY > 200) {
+            doc.addPage();
+            finalY = 20;
+        }
+        
+        doc.setFontSize(12);
+        doc.text('Månedlig Nedbørsammenligning', 14, finalY);
+        
+        const precipCompareData = monthNames.map((month, idx) => [
+            month,
+            `${voss.monthlyPrecip[idx]} mm`,
+            `${bulk.monthlyPrecip[idx]} mm`,
+            `${bulk.monthlyPrecip[idx] - voss.monthlyPrecip[idx]} mm`
+        ]);
+        
+        doc.autoTable({
+            startY: finalY + 5,
+            head: [['Måned', voss.name, bulk.name, 'Diff']],
+            body: precipCompareData,
+            theme: 'grid',
+            headStyles: { fillColor: [59, 130, 246] },
+            margin: { left: 14, right: 14 }
+        });
+        
+        // Add comparison charts
+        finalY = doc.lastAutoTable.finalY + 10;
+        if (finalY > 200) {
+            doc.addPage();
+            finalY = 20;
+        }
+        
+        doc.setFontSize(12);
+        doc.text('Temperatursammenligning', 14, finalY);
+        const tempCanvas = document.getElementById('tempChart');
+        if (tempCanvas) {
+            const tempImg = tempCanvas.toDataURL('image/png');
+            doc.addImage(tempImg, 'PNG', 14, finalY + 5, 180, 70);
+            finalY += 80;
+        }
+        
+        if (finalY > 200) {
+            doc.addPage();
+            finalY = 20;
+        }
+        
+        doc.setFontSize(12);
+        doc.text('Nedbørsammenligning', 14, finalY);
+        const precipCanvas = document.getElementById('precipChart');
+        if (precipCanvas) {
+            const precipImg = precipCanvas.toDataURL('image/png');
+            doc.addImage(precipImg, 'PNG', 14, finalY + 5, 180, 70);
         }
     }
 }

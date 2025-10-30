@@ -778,8 +778,14 @@ body {
     color: var(--color-text-primary);
 }
 
-.weather-modal-header svg {
+.weather-modal-header h2 svg {
     color: var(--color-primary);
+}
+
+.weather-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .weather-content {
@@ -899,10 +905,22 @@ body {
     
     .weather-modal-header {
         padding: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
     }
     
     .weather-modal-header h2 {
         font-size: 1.125rem;
+    }
+    
+    .weather-header-actions {
+        width: 100%;
+        flex-direction: row;
+    }
+    
+    .weather-header-actions .btn {
+        flex: 1;
     }
     
     .weather-content {
