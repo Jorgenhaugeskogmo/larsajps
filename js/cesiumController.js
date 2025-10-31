@@ -68,14 +68,39 @@ class CesiumController {
             const scene = this.viewer.scene;
             const camera = this.viewer.camera;
             
-            // Enable better camera controls
+            // Enable all camera controls
             scene.screenSpaceCameraController.enableRotate = true;
             scene.screenSpaceCameraController.enableTranslate = true;
             scene.screenSpaceCameraController.enableZoom = true;
             scene.screenSpaceCameraController.enableTilt = true;
             scene.screenSpaceCameraController.enableLook = true;
             
-            // Set rotation speed
+            // Configure tilt behavior - make it easier to change camera angle
+            scene.screenSpaceCameraController.tiltEventTypes = [
+                Cesium.CameraEventType.MIDDLE_DRAG,  // Middle mouse button
+                Cesium.CameraEventType.PINCH,         // Touch pinch
+                {
+                    eventType: Cesium.CameraEventType.LEFT_DRAG,
+                    modifier: Cesium.KeyboardEventModifier.CTRL  // Ctrl + left drag
+                },
+                {
+                    eventType: Cesium.CameraEventType.RIGHT_DRAG,
+                    modifier: Cesium.KeyboardEventModifier.CTRL  // Ctrl + right drag
+                }
+            ];
+            
+            // Configure rotation behavior
+            scene.screenSpaceCameraController.rotateEventTypes = [
+                Cesium.CameraEventType.LEFT_DRAG
+            ];
+            
+            // Configure zoom behavior
+            scene.screenSpaceCameraController.zoomEventTypes = [
+                Cesium.CameraEventType.WHEEL,
+                Cesium.CameraEventType.PINCH
+            ];
+            
+            // Set rotation and tilt speeds
             scene.screenSpaceCameraController.inertiaSpin = 0.9;
             scene.screenSpaceCameraController.inertiaTranslate = 0.9;
             scene.screenSpaceCameraController.inertiaZoom = 0.8;
@@ -86,12 +111,14 @@ class CesiumController {
 
             this.isInitialized = true;
             console.log('Cesium viewer initialized successfully');
-            console.log('Navigasjonskontroller:');
-            console.log('- Venstre museknapp + dra: Roter kamera');
-            console.log('- Høyre museknapp + dra: Zoom inn/ut');
-            console.log('- Midtre museknapp + dra: Pan');
-            console.log('- Mushjul: Zoom');
-            console.log('- Ctrl + venstre/høyre: Tilt kamera');
+            console.log('');
+            console.log('=== 3D NAVIGASJONSKONTROLLER ===');
+            console.log('🖱️ Venstre museknapp + dra: Roter kamera rundt punktet');
+            console.log('🖱️ Midtre museknapp + dra: Endre kameravinkel (tilt)');
+            console.log('🖱️ Høyre museknapp + dra: Pan (flytt kartet)');
+            console.log('🎡 Mushjul: Zoom inn/ut');
+            console.log('⌨️  Ctrl + venstre/høyre dra: Endre kameravinkel (tilt)');
+            console.log('================================');
         } catch (error) {
             console.error('Error initializing Cesium:', error);
             showError('Kunne ikke initialisere 3D-visning');
