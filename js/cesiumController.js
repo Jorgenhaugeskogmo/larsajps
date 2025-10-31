@@ -42,12 +42,13 @@ class CesiumController {
             // Remove default imagery layers and add our own
             this.viewer.imageryLayers.removeAll();
             
-            // Add OpenStreetMap imagery layer
-            const osmLayer = this.viewer.imageryLayers.addImageryProvider(
+            // Add Mapbox imagery layer
+            const mapboxAccessToken = 'pk.eyJ1Ijoiam9lc2tvIiwiYSI6ImNtNXowenR4NDA1Mzkya3NicG5ocjNubXoifQ.b_2GrrKXGT-FqePBM2o8XQ';
+            const mapboxLayer = this.viewer.imageryLayers.addImageryProvider(
                 new Cesium.UrlTemplateImageryProvider({
-                    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    url: `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${mapboxAccessToken}`,
                     maximumLevel: 19,
-                    credit: '© OpenStreetMap contributors'
+                    credit: '© Mapbox © OpenStreetMap'
                 })
             );
             
