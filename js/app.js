@@ -238,7 +238,7 @@ class GPSTrackViewer {
     /**
      * Add a new layer
      */
-    addLayer(trackData) {
+    async addLayer(trackData) {
         // Validate track data
         if (!trackData || !trackData.points || trackData.points.length === 0) {
             console.error('Cannot add layer: no valid points');
@@ -274,7 +274,7 @@ class GPSTrackViewer {
         this.renderLayers();
         
         // Display all visible layers
-        this.displayAllLayers();
+        await this.displayAllLayers();
         
         // Update stats and charts for current track
         const stats = calculateStatistics(trackData.points);
@@ -295,15 +295,15 @@ class GPSTrackViewer {
     /**
      * Display all visible layers on map/3D
      */
-    displayAllLayers() {
+    async displayAllLayers() {
         if (this.is3DMode) {
             // Display in 3D
             this.cesiumController.clear();
-            this.layers.forEach(layer => {
+            for (const layer of this.layers) {
                 if (layer.visible) {
-                    this.cesiumController.displayTrack(layer.data, layer.color);
+                    await this.cesiumController.displayTrack(layer.data, layer.color);
                 }
-            });
+            }
         } else {
             // Display in 2D
             this.mapController.clearAllLayers();
@@ -371,25 +371,25 @@ class GPSTrackViewer {
     /**
      * Toggle layer visibility
      */
-    toggleLayer(layerId) {
+    async toggleLayer(layerId) {
         const layer = this.layers.find(l => l.id === layerId);
         if (layer) {
             layer.visible = !layer.visible;
             this.renderLayers();
-            this.displayAllLayers();
+            await this.displayAllLayers();
         }
     }
 
     /**
      * Remove a layer
      */
-    removeLayer(layerId) {
+    async removeLayer(layerId) {
         const index = this.layers.findIndex(l => l.id === layerId);
         if (index !== -1) {
             this.layers.splice(index, 1);
             this.updateLayerCount();
             this.renderLayers();
-            this.displayAllLayers();
+            await this.displayAllLayers();
             
             // Update current track if needed
             if (this.layers.length > 0) {
@@ -441,7 +441,7 @@ class GPSTrackViewer {
     /**
      * Toggle between 2D and 3D view
      */
-    toggle3DView() {
+    async toggle3DView() {
         if (this.layers.length === 0) return;
 
         this.is3DMode = !this.is3DMode;
@@ -449,8 +449,8 @@ class GPSTrackViewer {
 
         if (this.is3DMode) {
             // Switch to 3D
-            this.cesiumController.show();
-            this.displayAllLayers();
+            await this.cesiumController.show();
+            await this.displayAllLayers();
             toggle3DBtn.innerHTML = `
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>
@@ -461,7 +461,7 @@ class GPSTrackViewer {
         } else {
             // Switch to 2D
             this.cesiumController.hide();
-            this.displayAllLayers();
+            await this.displayAllLayers();
             toggle3DBtn.innerHTML = `
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 2L2 7l10 5 10-5-10-5z"/>

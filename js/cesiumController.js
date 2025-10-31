@@ -14,7 +14,7 @@ class CesiumController {
     /**
      * Initialize Cesium viewer
      */
-    initViewer() {
+    async initViewer() {
         if (this.isInitialized) return;
 
         try {
@@ -35,9 +35,28 @@ class CesiumController {
                 timeline: true,
                 navigationHelpButton: true, // Enable navigation help
                 navigationInstructionsInitiallyVisible: false,
-                // Use basic terrain (no token required)
+                // Start with basic terrain, will be replaced
                 terrainProvider: new Cesium.EllipsoidTerrainProvider()
             });
+            
+            // Add 3D Terrain data
+            // Using Cesium World Terrain - free public terrain data
+            try {
+                // Attempt to use free terrain sources
+                // Option 1: Try STK World Terrain (free, no token needed)
+                this.viewer.terrainProvider = await Cesium.CesiumTerrainProvider.fromUrl(
+                    'https://assets.agi.com/stk-terrain/world',
+                    {
+                        requestVertexNormals: true,
+                        requestWaterMask: false
+                    }
+                );
+                console.log('3D Terrain loaded successfully (STK World Terrain)');
+            } catch (e) {
+                console.warn('Could not load terrain, using basic ellipsoid:', e);
+                // Fallback to basic ellipsoid if terrain fails
+                this.viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+            }
 
             // Remove default imagery layers and add our own
             this.viewer.imageryLayers.removeAll();
@@ -136,9 +155,9 @@ class CesiumController {
      * @param {object} trackData - Track data with points
      * @param {string} color - Hex color for the track (optional)
      */
-    displayTrack(trackData, color = '#FFFF00') {
+    async displayTrack(trackData, color = '#FFFF00') {
         if (!this.isInitialized) {
-            this.initViewer();
+            await this.initViewer();
         }
 
         if (!this.viewer) return;
@@ -349,7 +368,7 @@ class CesiumController {
     /**
      * Show 3D view
      */
-    show() {
+    async show() {
         const cesiumContainer = document.getElementById('cesiumContainer');
         const leafletMap = document.getElementById('map');
         
@@ -358,7 +377,7 @@ class CesiumController {
             leafletMap.style.display = 'none';
             
             if (!this.isInitialized) {
-                this.initViewer();
+                await this.initViewer();
             }
             
             // Resize viewer
